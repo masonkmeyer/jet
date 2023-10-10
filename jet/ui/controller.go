@@ -65,7 +65,7 @@ func (c *Controller) Layout(g *gocui.Gui) error {
 			c.currentLog = results
 			c.g.DeleteView(LOGS)
 
-			graphLog := c.git.Logs(item.Value, "--graph", "--oneline", "--decorate", "--color", "--abbrev-commit", "--date=relative", "--pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset'")
+			graphLog := c.git.Logs(item.Value, "--graph", "--oneline", "--decorate", "--color", "--abbrev-commit", "--date=relative", "--format=format:%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(auto)%d%C(reset)")
 			c.graph = graphLog
 			c.g.DeleteView(GRAPH)
 			return nil
