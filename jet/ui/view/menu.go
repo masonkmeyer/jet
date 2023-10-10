@@ -71,6 +71,7 @@ func (m *Menu) selectLine(v *gocui.View, change int) error {
 	if v != nil {
 		x, y := v.Cursor()
 		v.SetCursor(x, y+change)
+		m.ViewModel.OnChange(m.ViewModel.Items[y+change])
 	}
 	return nil
 }
