@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/jroimartin/gocui"
@@ -10,17 +9,25 @@ import (
 	"github.com/masonkmeyer/jet/jet/ui/viewmodel"
 )
 
+const (
+	BRANCHES = "branches"
+	LOGS     = "logs"
+	GRAPH    = "graph"
+)
+
 type Controller struct {
 	g          *gocui.Gui
 	git        *jet.Git
 	currentLog string
+	graph      string
 }
 
 func NewController(g *gocui.Gui) *Controller {
 	c := &Controller{
 		g:          g,
 		git:        &jet.Git{},
-		currentLog: "This is a message",
+		currentLog: "",
+		graph:      "",
 	}
 
 	return c
@@ -53,25 +60,37 @@ func (c *Controller) Layout(g *gocui.Gui) error {
 			return nil
 		},
 		OnChange: func(item *viewmodel.MenuItem) error {
-			c.currentLog = item.Title
-			c.g.DeleteView("logs")
+			results := c.git.Logs(item.Value, "-1")
+
+			c.currentLog = results
+			c.g.DeleteView(LOGS)
+
+			graphLog := c.git.Logs(item.Value, "--graph", "--oneline", "--decorate", "--color", "--abbrev-commit", "--date=relative", "--pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset'")
+			c.graph = graphLog
+			c.g.DeleteView(GRAPH)
 			return nil
 		},
 	}
 
-	if v, err := g.SetView("branches", 0, 0, maxX/2-1, maxY-1); err != nil {
+	if v, err := g.SetView(BRANCHES, 0, 0, maxX/2-1, maxY/2-1); err != nil {
 		v.Autoscroll = true
-		menuView, _ := view.NewMenu(g, menu, "branches")
+		v.Title = "Recent Branches"
+		menuView, _ := view.NewMenu(g, menu, BRANCHES)
 		menuView.Render(v)
 	}
 
-	if v, err := g.SetView("logs", maxX/2, 0, maxX-1, maxY-1); err != nil {
-		v.Autoscroll = true
-
-		fmt.Fprintln(v, c.currentLog)
+	if v, err := g.SetView(LOGS, maxX/2, 0, maxX-1, maxY/2-1); err != nil {
+		v.Title = "Recent Commit Message"
+		textView := view.NewText(g, viewmodel.Text{Value: c.currentLog, Autoscroll: true, Wrap: true}, LOGS)
+		textView.Render(v)
 	}
 
-	g.SetCurrentView("branches")
+	if v, err := g.SetView(GRAPH, 0, maxY/2, maxX-1, maxY-1); err != nil {
+		textView := view.NewText(g, viewmodel.Text{Value: c.graph, Autoscroll: true, Wrap: true}, LOGS)
+		textView.Render(v)
+	}
+
+	g.SetCurrentView(BRANCHES)
 
 	return nil
 }

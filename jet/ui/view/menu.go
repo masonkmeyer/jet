@@ -50,11 +50,12 @@ func (m *Menu) Render(v *gocui.View) error {
 	m.SelBgColor = gocui.ColorCyan
 	m.SelFgColor = gocui.ColorBlack
 	m.Highlight = true
-	v.Title = m.Name
 
 	for _, item := range m.ViewModel.Items {
 		fmt.Fprintln(v, item.Title)
 	}
+
+	m.ViewModel.OnChange(m.ViewModel.Items[0])
 
 	return nil
 }
@@ -68,10 +69,19 @@ func (m *Menu) selectPrevLine(g *gocui.Gui, v *gocui.View) error {
 }
 
 func (m *Menu) selectLine(v *gocui.View, change int) error {
-	if v != nil {
-		x, y := v.Cursor()
-		v.SetCursor(x, y+change)
-		m.ViewModel.OnChange(m.ViewModel.Items[y+change])
+	if v == nil {
+		return nil
 	}
+
+	x, y := v.Cursor()
+	curr := y + change
+
+	if curr < 0 || curr >= len(m.ViewModel.Items)-1 {
+		return nil
+	}
+
+	v.SetCursor(x, curr)
+	m.ViewModel.OnChange(m.ViewModel.Items[y+change])
+
 	return nil
 }

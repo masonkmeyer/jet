@@ -21,3 +21,8 @@ func (g Git) ListBranches(gitBranchArgs ...string) []string {
 	output := g.exec(append([]string{"branch", "--list"}, gitBranchArgs...)...)
 	return strings.Split(output, "\n")
 }
+
+func (g Git) Logs(args ...string) string {
+	output := g.exec(append([]string{"--no-pager", "log"}, args...)...)
+	return output
+}
