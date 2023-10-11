@@ -41,6 +41,7 @@ func NewController(g *gocui.Gui, exitChannel chan string) *Controller {
 
 // Quit is the handler for the quit keybinding
 func (c *Controller) Quit(g *gocui.Gui, v *gocui.View) error {
+	go func() { c.exitChannel <- "" }()
 	return gocui.ErrQuit
 }
 
@@ -110,7 +111,7 @@ func (c *Controller) onChange(item *viewmodel.MenuItem) error {
 	c.recentCommitMessage = results
 	c.g.DeleteView(LOGS)
 
-	graphLog := c.git.Logs(item.Value, "--graph", "--oneline", "--decorate", "--color", "--abbrev-commit", "--date=relative", "--format=format:%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(auto)%d%C(reset)")
+	graphLog := c.git.Logs(item.Value, "--author-date-order", "--graph", "--oneline", "--decorate", "--color", "--abbrev-commit", "--date=relative", "--format=format:%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(auto)%d%C(reset)")
 	c.gitGraph = graphLog
 	c.g.DeleteView(GRAPH)
 	return nil
@@ -118,5 +119,9 @@ func (c *Controller) onChange(item *viewmodel.MenuItem) error {
 
 // Pads the string with chars of length
 func (c *Controller) pad(s string, padStr string, pLen int) string {
+	if pLen <= 0 {
+		return s
+	}
+
 	return fmt.Sprintf("%s%s", s, strings.Repeat(padStr, pLen))
 }
