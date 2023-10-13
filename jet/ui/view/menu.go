@@ -81,14 +81,23 @@ func (m *Menu) selectLine(v *gocui.View, change int) error {
 	}
 
 	x, y := v.Cursor()
+
 	curr := y + change
 
-	if curr < 0 || curr >= len(m.ViewModel.Items)-1 {
+	ox, oy := v.Origin()
+	index := oy + curr
+
+	if index < 0 || index >= len(m.ViewModel.Items)-1 {
 		return nil
 	}
 
-	v.SetCursor(x, curr)
-	m.ViewModel.OnChange(m.ViewModel.Items[y+change])
+	if err := v.SetCursor(x, curr); err != nil {
+		if err := v.SetOrigin(ox, oy+change); err != nil {
+			return err
+		}
+	}
+
+	m.ViewModel.OnChange(m.ViewModel.Items[index])
 
 	return nil
 }

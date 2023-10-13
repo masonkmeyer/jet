@@ -72,7 +72,6 @@ func (c *Controller) Layout(g *gocui.Gui) error {
 	if v, err := g.SetView(BRANCHES, 0, 0, maxX/2-1, maxY/2-1); err != nil {
 		menuView, _ := view.NewMenu(g, menu, BRANCHES)
 		menuView.Render(v,
-			view.WithAutoscroll(true),
 			view.WithHighlight(true),
 			view.WithSelBgColor(gocui.ColorCyan),
 			view.WithSelFgColor(gocui.ColorBlack),
@@ -81,13 +80,12 @@ func (c *Controller) Layout(g *gocui.Gui) error {
 
 	if v, err := g.SetView(LOGS, maxX/2, 0, maxX-1, maxY/2-1); err != nil {
 		textView := view.NewText(g, viewmodel.Text{Value: c.recentCommitMessage}, LOGS)
-
-		textView.Render(v, view.WithAutoscroll(true), view.WithWrap(true), view.WithTitle("Recent Commit Message"), view.WithFgColor(gocui.ColorYellow))
+		textView.Render(v, view.WithWrap(true), view.WithTitle("Recent Commit Message"), view.WithFgColor(gocui.ColorYellow))
 	}
 
 	if v, err := g.SetView(GRAPH, 0, maxY/2, maxX-1, maxY-1); err != nil {
 		textView := view.NewText(g, viewmodel.Text{Value: c.gitGraph}, LOGS)
-		textView.Render(v, view.WithAutoscroll(true), view.WithWrap(true), view.WithTitle("Graph"))
+		textView.Render(v, view.WithWrap(true), view.WithTitle("Graph"))
 	}
 
 	g.SetCurrentView(BRANCHES)
@@ -117,7 +115,7 @@ func (c *Controller) onChange(item *viewmodel.MenuItem) error {
 	return nil
 }
 
-// Pads the string with chars of length
+// Pad the string with chars of length
 func (c *Controller) pad(s string, padStr string, pLen int) string {
 	if pLen <= 0 {
 		return s
