@@ -12,9 +12,9 @@ import (
 
 // constants for view names
 const (
-	BRANCHES = "branches"
-	LOGS     = "logs"
-	GRAPH    = "graph"
+	BRANCHES    = "branches"
+	LOGS        = "logs"
+	RECENT_LOGS = "recent_logs"
 )
 
 // Controller is the main controller for the UI
@@ -83,9 +83,9 @@ func (c *Controller) Layout(g *gocui.Gui) error {
 		textView.Render(v, view.WithWrap(true), view.WithTitle("Recent Commit Message"), view.WithFgColor(gocui.ColorYellow))
 	}
 
-	if v, err := g.SetView(GRAPH, 0, maxY/2, maxX-1, maxY-1); err != nil {
+	if v, err := g.SetView(RECENT_LOGS, 0, maxY/2, maxX-1, maxY-1); err != nil {
 		textView := view.NewText(g, viewmodel.Text{Value: c.gitGraph}, LOGS)
-		textView.Render(v, view.WithWrap(true), view.WithTitle("Graph"))
+		textView.Render(v, view.WithWrap(true), view.WithTitle("Recent Commits"))
 	}
 
 	g.SetCurrentView(BRANCHES)
@@ -110,9 +110,9 @@ func (c *Controller) onChange(item *viewmodel.MenuItem) error {
 	c.recentCommitMessage = results
 	c.g.DeleteView(LOGS)
 
-	graphLog := c.git.Logs(item.Value, "--author-date-order", "--graph", "--oneline", "--decorate", "--color", "--abbrev-commit", "--date=relative", "--format=format:%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(auto)%d%C(reset)")
-	c.gitGraph = graphLog[:30000]
-	c.g.DeleteView(GRAPH)
+	graphLog := c.git.Logs(item.Value, "-n 30", "--oneline", "--decorate", "--color", "--abbrev-commit", "--date=relative", "--format=format:%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(auto)%d%C(reset)")
+	c.gitGraph = graphLog
+	c.g.DeleteView(RECENT_LOGS)
 	return nil
 }
 
