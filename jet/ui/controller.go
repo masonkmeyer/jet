@@ -104,13 +104,14 @@ func (c *Controller) onSelected(item *viewmodel.MenuItem) error {
 
 // onChange is the handler for when the selected branch changes
 func (c *Controller) onChange(item *viewmodel.MenuItem) error {
+
 	results := c.git.Logs(item.Value, "-1")
 
 	c.recentCommitMessage = results
 	c.g.DeleteView(LOGS)
 
 	graphLog := c.git.Logs(item.Value, "--author-date-order", "--graph", "--oneline", "--decorate", "--color", "--abbrev-commit", "--date=relative", "--format=format:%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(auto)%d%C(reset)")
-	c.gitGraph = graphLog
+	c.gitGraph = graphLog[:30000]
 	c.g.DeleteView(GRAPH)
 	return nil
 }
