@@ -53,6 +53,11 @@ func (c *Controller) Layout(g *gocui.Gui) error {
 
 	branches := c.git.ListBranches("--sort=-committerdate", "--format=%(align:13,left)%(authordate:relative)%(end) %(refname:short)")
 
+	if strings.Contains(branches[0], "fatal") {
+		go func() { c.exitChannel <- "Error: Not a git repository" }()
+		return gocui.ErrQuit
+	}
+
 	for _, branch := range branches {
 		parts := strings.Split(branch, " ")
 		value := parts[len(parts)-1]
