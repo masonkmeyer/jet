@@ -15,10 +15,12 @@ const (
 	BRANCHES    = "branches"
 	LOGS        = "logs"
 	RECENT_LOGS = "recent_logs"
+	FILTER      = "filter"
 )
 
 // Controller is the main controller for the UI
 type Controller struct {
+	filter              string
 	g                   *gocui.Gui
 	git                 *jet.Git
 	recentCommitMessage string
@@ -29,6 +31,7 @@ type Controller struct {
 // NewController creates a new UI controller
 func NewController(g *gocui.Gui, exitChannel chan string) *Controller {
 	c := &Controller{
+		filter:              "",
 		g:                   g,
 		git:                 &jet.Git{},
 		recentCommitMessage: "",
@@ -37,6 +40,26 @@ func NewController(g *gocui.Gui, exitChannel chan string) *Controller {
 	}
 
 	return c
+}
+
+func (c *Controller) OnBackspace(g *gocui.Gui, v *gocui.View) error {
+	if len(c.filter) == 0 {
+		return nil
+	}
+
+	c.filter = c.filter[:len(c.filter)-1]
+	g.DeleteView(BRANCHES)
+	g.DeleteView(FILTER)
+	return nil
+}
+
+func (c *Controller) OnType(char rune) func(g *gocui.Gui, v *gocui.View) error {
+	return func(g *gocui.Gui, v *gocui.View) error {
+		c.filter += string(char)
+		g.DeleteView(BRANCHES)
+		g.DeleteView(FILTER)
+		return nil
+	}
 }
 
 // Quit is the handler for the quit keybinding
@@ -59,6 +82,10 @@ func (c *Controller) Layout(g *gocui.Gui) error {
 	}
 
 	for _, branch := range branches {
+		if c.filter != "" && !strings.Contains(branch, c.filter) {
+			continue
+		}
+
 		parts := strings.Split(branch, " ")
 		value := parts[len(parts)-1]
 
@@ -88,9 +115,14 @@ func (c *Controller) Layout(g *gocui.Gui) error {
 		textView.Render(v, view.WithWrap(true), view.WithTitle("Recent Commit Message"), view.WithFgColor(gocui.ColorYellow))
 	}
 
-	if v, err := g.SetView(RECENT_LOGS, 0, maxY/2, maxX-1, maxY-1); err != nil {
+	if v, err := g.SetView(RECENT_LOGS, 0, maxY/2-3, maxX-1, maxY-3); err != nil {
 		textView := view.NewText(g, viewmodel.Text{Value: c.gitGraph}, LOGS)
 		textView.Render(v, view.WithWrap(true), view.WithTitle("Recent Commits"))
+	}
+
+	if v, err := g.SetView(FILTER, 0, maxY-3, maxX-1, maxY-1); err != nil {
+		textView := view.NewText(g, viewmodel.Text{Value: c.filter}, FILTER)
+		textView.Render(v, view.WithTitle("Filter"))
 	}
 
 	g.SetCurrentView(BRANCHES)
@@ -109,7 +141,6 @@ func (c *Controller) onSelected(item *viewmodel.MenuItem) error {
 
 // onChange is the handler for when the selected branch changes
 func (c *Controller) onChange(item *viewmodel.MenuItem) error {
-
 	results := c.git.Logs(item.Value, "-1")
 
 	c.recentCommitMessage = results
