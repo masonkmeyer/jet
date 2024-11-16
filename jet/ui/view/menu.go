@@ -59,7 +59,9 @@ func (m *Menu) Render(v *gocui.View, opts ...RenderOption) error {
 		fmt.Fprintln(v, item.Title)
 	}
 
-	m.ViewModel.OnChange(m.ViewModel.Items[0])
+	if (len(m.ViewModel.Items)) == 0 {
+		return nil
+	}
 
 	return nil
 }
