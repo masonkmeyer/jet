@@ -23,11 +23,13 @@ func NewMenu(g *gocui.Gui, vm viewmodel.Menu, name string) (*Menu, error) {
 		Name:      name,
 	}
 
-	if err := g.SetKeybinding("", gocui.KeyArrowDown, gocui.ModNone, m.selectNextLine); err != nil {
+	g.DeleteKeybindings(name)
+
+	if err := g.SetKeybinding(name, gocui.KeyArrowDown, gocui.ModNone, m.selectNextLine); err != nil {
 		return nil, err
 	}
 
-	if err := g.SetKeybinding("", gocui.KeyArrowUp, gocui.ModNone, m.selectPrevLine); err != nil {
+	if err := g.SetKeybinding(name, gocui.KeyArrowUp, gocui.ModNone, m.selectPrevLine); err != nil {
 		return nil, err
 	}
 
@@ -43,6 +45,10 @@ func NewMenu(g *gocui.Gui, vm viewmodel.Menu, name string) (*Menu, error) {
 
 		return nil
 	})
+
+	if len(vm.Items) > 0 {
+		vm.OnChange(vm.Items[0])
+	}
 
 	return m, nil
 }
@@ -89,7 +95,7 @@ func (m *Menu) selectLine(v *gocui.View, change int) error {
 	ox, oy := v.Origin()
 	index := oy + curr
 
-	if index < 0 || index >= len(m.ViewModel.Items)-1 {
+	if index < 0 || index >= len(m.ViewModel.Items) {
 		return nil
 	}
 

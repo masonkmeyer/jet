@@ -18,7 +18,11 @@ func Run(exitChannel chan string) {
 
 	defer g.Close()
 
-	controller := ui.NewController(g, exitChannel)
+	controller, err := ui.NewController(g, exitChannel)
+
+	if err != nil {
+		log.Panicln(err)
+	}
 
 	g.SetManager(controller)
 
