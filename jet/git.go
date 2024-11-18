@@ -2,38 +2,113 @@ package jet
 
 import (
 	"fmt"
-	"os/exec"
-	"strings"
+	"sort"
+	"time"
+
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
 type (
+	// Branch represents a git branch
+	Branch struct {
+		Name string
+		When time.Time
+	}
+	// Commit represents a git commit
+	Commit struct {
+		Hash    string
+		Author  string
+		Message string
+		When    time.Time
+	}
 	// Git is a wrapper around the git command
 	Git struct {
+		repo *git.Repository
 	}
 )
 
+// NewGit creates a new Git instance
+func NewGit() (*Git, error) {
+	r, err := git.PlainOpen(".")
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &Git{
+		repo: r,
+	}, nil
+}
+
 // Checkout executes a git checkout command with the branch name
 // and returns the output and the command that was executed
-func (g Git) Checkout(branchName string) (string, string) {
-	result, cmd := g.exec("checkout", branchName)
-	return result, cmd
+func (g Git) Checkout(branchName string) error {
+	w, err := g.repo.Worktree()
+
+	if err != nil {
+		return err
+	}
+
+	err = w.Checkout(&git.CheckoutOptions{
+		Branch: plumbing.ReferenceName(fmt.Sprintf("refs/heads/%s", branchName)),
+	})
+
+	return err
 }
 
 // ListBranches executes a git branch command with --list and any other provided args
-func (g Git) ListBranches(gitBranchArgs ...string) []string {
-	output, _ := g.exec(append([]string{"branch", "--list"}, gitBranchArgs...)...)
-	return strings.Split(output, "\n")
+func (g Git) ListBranches() []Branch {
+	branches, _ := g.repo.Branches()
+
+	results := []Branch{}
+	branches.ForEach(func(ref *plumbing.Reference) error {
+		commit, err := g.repo.CommitObject(ref.Hash())
+
+		if err != nil {
+			return err
+		}
+
+		results = append(results, Branch{
+			Name: ref.Name().Short(),
+			When: commit.Author.When,
+		})
+
+		return nil
+	})
+
+	// sort branches by most recent commit
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].When.After(results[j].When)
+	})
+
+	return results
 }
 
 // Log executes a git log command with any provided args and --no-pager to prevent interactive paging
-func (g Git) Logs(args ...string) string {
-	output, _ := g.exec(append([]string{"--no-pager", "log"}, args...)...)
-	return output
-}
+func (g Git) Logs(branchName string, n int) []Commit {
+	name := plumbing.ReferenceName(fmt.Sprintf("refs/heads/%s", branchName))
+	ref, _ := g.repo.Reference(name, true)
 
-// exec executes a git command with the provided args
-// it returns the output of the command and the command that was executed
-func (g Git) exec(args ...string) (string, string) {
-	out, _ := exec.Command("git", args...).CombinedOutput()
-	return string(out), fmt.Sprintf("git %s", strings.Join(args, " "))
+	yearAgo := time.Now().AddDate(-1, 0, 0)
+	logIter, _ := g.repo.Log(&git.LogOptions{From: ref.Hash(), Since: &yearAgo})
+
+	results := []Commit{}
+	logIter.ForEach(func(c *object.Commit) error {
+		if len(results) >= n {
+			return nil
+		}
+
+		results = append(results, Commit{
+			Hash:    c.Hash.String()[:7],
+			Author:  c.Author.Name,
+			Message: c.Message,
+			When:    c.Author.When,
+		})
+
+		return nil
+	})
+
+	return results
 }
