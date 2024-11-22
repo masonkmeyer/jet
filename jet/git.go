@@ -2,7 +2,9 @@ package jet
 
 import (
 	"fmt"
+	"os/exec"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -62,18 +64,13 @@ func (g Git) IsClean() bool {
 // Checkout executes a git checkout command with the branch name
 // and returns the output and the command that was executed
 func (g Git) Checkout(branchName string) error {
-	w, err := g.repo.Worktree()
-
+	result, _, err := g.exec("checkout", branchName)
 	if err != nil {
-		return err
+		return fmt.Errorf("error checking out branch: %s", result)
 	}
 
-	branchRefName := plumbing.NewBranchReferenceName(branchName)
-	err = w.Checkout(&git.CheckoutOptions{
-		Branch: plumbing.ReferenceName(branchRefName),
-	})
+	return nil
 
-	return err
 }
 
 // ListBranches executes a git branch command with --list and any other provided args
@@ -129,4 +126,11 @@ func (g Git) Logs(branchName string, n int) []Commit {
 	})
 
 	return results
+}
+
+// exec executes a git command with the provided args
+// it returns the output of the command and the command that was executed
+func (g Git) exec(args ...string) (string, string, error) {
+	out, err := exec.Command("git", args...).CombinedOutput()
+	return string(out), fmt.Sprintf("git %s", strings.Join(args, " ")), err
 }
