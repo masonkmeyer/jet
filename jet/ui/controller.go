@@ -36,6 +36,14 @@ func NewController(g *gocui.Gui, exitChannel chan string) (*Controller, error) {
 		return nil, err
 	}
 
+	// We really should't switch branches if we have uncommited changes
+	if isClean := repo.IsClean(); !isClean {
+		func() {
+			exitChannel <- color.RedString("Unable to switch branches. Repository has uncommited changes.")
+		}()
+		return nil, fmt.Errorf("repository has uncommited changes")
+	}
+
 	c := &Controller{
 		filter:              "",
 		g:                   g,

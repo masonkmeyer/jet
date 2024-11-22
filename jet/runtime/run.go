@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 
+	"github.com/fatih/color"
 	"github.com/jroimartin/gocui"
 	"github.com/masonkmeyer/jet/jet/ui"
 )
@@ -21,7 +22,11 @@ func Run(exitChannel chan string) {
 	controller, err := ui.NewController(g, exitChannel)
 
 	if err != nil {
-		log.Panicln(err)
+		go func() {
+			exitChannel <- color.RedString("Not a git repository")
+		}()
+
+		return
 	}
 
 	g.SetManager(controller)
