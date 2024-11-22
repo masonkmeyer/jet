@@ -42,6 +42,23 @@ func NewGit() (*Git, error) {
 	}, nil
 }
 
+// IsClean returns true if the current branch is clean (no uncommited changes)
+func (g Git) IsClean() bool {
+	w, err := g.repo.Worktree()
+
+	if err != nil {
+		return false
+	}
+
+	status, err := w.Status()
+
+	if err != nil {
+		return false
+	}
+
+	return status.IsClean()
+}
+
 // Checkout executes a git checkout command with the branch name
 // and returns the output and the command that was executed
 func (g Git) Checkout(branchName string) error {
@@ -51,8 +68,9 @@ func (g Git) Checkout(branchName string) error {
 		return err
 	}
 
+	branchRefName := plumbing.NewBranchReferenceName(branchName)
 	err = w.Checkout(&git.CheckoutOptions{
-		Branch: plumbing.ReferenceName(fmt.Sprintf("refs/heads/%s", branchName)),
+		Branch: plumbing.ReferenceName(branchRefName),
 	})
 
 	return err
